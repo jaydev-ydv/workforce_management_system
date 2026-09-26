@@ -34,6 +34,15 @@
     <h2 id="formTitle">Login</h2>
     <p class="form-subtitle">Welcome back. Enter your credentials to continue.</p>
 
+    <div style="display:flex; gap:8px; margin: 14px 0 16px;">
+      <button type="button" id="tabAdmin" onclick="setLoginRole('admin')" style="flex:1; padding:8px 12px; font-size:12px; border-radius:10px; background:linear-gradient(135deg, #6366f1, #06b6d4); color:white; border:none; cursor:pointer; font-weight:700;">
+        🛡️ Admin Login
+      </button>
+      <button type="button" id="tabEmployee" onclick="setLoginRole('employee')" style="flex:1; padding:8px 12px; font-size:12px; border-radius:10px; background:rgba(255,255,255,0.08); color:white; border:1px solid rgba(255,255,255,0.14); cursor:pointer; font-weight:700;">
+        👤 Employee Login
+      </button>
+    </div>
+
     <input id="email" placeholder="Email" class="hidden">
     <input id="username" placeholder="Username">
     <input id="password" type="password" placeholder="Password">
@@ -42,10 +51,14 @@
 
     <p id="msg"></p>
 
-    <p class="toggle">
-      <span id="toggleText">New user?</span>
-      <a id="toggleLink" href="#" onclick="toggleForm()">Register here</a>
-    </p>
+    <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 18px; padding-top: 14px; display: flex; flex-direction: column; gap: 8px; text-align: center;">
+      <a href="admin-login.html" style="color: #818cf8; font-size: 13px; text-decoration: none; font-weight: 600;">
+        🛡️ Go to Dedicated Admin Portal Login →
+      </a>
+      <a href="employee-login.html" style="color: #34d399; font-size: 13px; text-decoration: none; font-weight: 600;">
+        👤 Go to Dedicated Employee Portal Login →
+      </a>
+    </div>
   </div>
 </div>
 

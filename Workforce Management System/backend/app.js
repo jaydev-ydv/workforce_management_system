@@ -15,13 +15,47 @@ app.use(express.static(path.join(__dirname, "../frontend")));
 // API
 app.use("/api", routes);
 
+// Portal Routes
+app.get("/admin/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/admin-login.html"));
+});
+
+app.get("/employee/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/employee-login.html"));
+});
+
+// Admin Portal Sub-routes
+app.get([
+  "/admin",
+  "/admin/dashboard",
+  "/admin/employees",
+  "/admin/employees/add",
+  "/admin/shifts",
+  "/admin/attendance",
+  "/admin/reports",
+  "/admin/leave"
+], (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dashboard.html"));
+});
+
+// Employee Portal Sub-routes
+app.get([
+  "/employee",
+  "/employee/dashboard",
+  "/employee/schedule",
+  "/employee/attendance",
+  "/employee/reports",
+  "/employee/leave",
+  "/employee/profile"
+], (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/employee-portal.html"));
+});
+
 // Default route
 app.get("/", (req, res) => {
   const indexPath = path.join(__dirname, "../frontend/index.html");
   res.sendFile(indexPath, (err) => {
     if (err) {
-      // Frontend isn't bundled with this deployment (e.g. on Vercel the
-      // frontend is a separate project) — just confirm the API is alive.
       res.json({ message: "Workforce Management backend is running 🚀" });
     }
   });

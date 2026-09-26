@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Portal Login | Workforce Hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+
+  <script>
+    // If already logged in as employee, auto-redirect
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+    if (token && userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u.role === "employee") {
+          window.location.replace("employee-portal.html");
+        }
+      } catch (e) {}
+    }
+  </script>
+</head>
+<body>
+
+<div class="page-shell">
+  <div class="orb orb-one" style="background: radial-gradient(circle, #06b6d4 0%, transparent 70%);"></div>
+  <div class="orb orb-two" style="background: radial-gradient(circle, #10b981 0%, transparent 70%);"></div>
+
+  <section class="auth-hero">
+    <p class="eyebrow" style="color: #34d399;">Employee Self-Service</p>
+    <h1>Workforce Hub Staff Desk</h1>
+    <p class="hero-copy">
+      Check your scheduled shifts, punch in/out with automated hour tracking, submit time-off requests, and inspect attendance records.
+    </p>
+
+    <div class="theme-row" aria-hidden="true">
+      <span class="theme-pill" style="background: rgba(6, 182, 212, 0.2); border: 1px solid rgba(6, 182, 212, 0.4); color: #67e8f9;">🕒 Shift Punch Desk</span>
+      <span class="theme-pill" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7;">📅 My Schedule</span>
+      <span class="theme-pill" style="background: rgba(245, 158, 11, 0.2); border: 1px solid rgba(245, 158, 11, 0.4); color: #fcd34d;">🌴 Leave Requests</span>
+    </div>
+  </section>
+
+  <div class="container" style="border-top: 3px solid #06b6d4;">
+    <div class="card-glow" style="background: radial-gradient(circle at top, rgba(6, 182, 212, 0.15), transparent 70%);"></div>
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+      <span style="font-size: 20px;">👤</span>
+      <p class="form-kicker" style="margin: 0; color: #22d3ee;">Employee Portal</p>
+    </div>
+    
+    <h2>Staff Sign In</h2>
+    <p class="form-subtitle">Enter your assigned Employee ID and password to access your shift portal.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+      <div>
+        <label style="display:block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; font-weight: 600;">Employee ID / Username</label>
+        <input id="empUsername" placeholder="e.g. EMP2026001 or Staff ID" style="width: 100%;">
+      </div>
+      <div>
+        <label style="display:block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; font-weight: 600;">Password</label>
+        <input id="empPassword" type="password" placeholder="Enter your password" style="width: 100%;">
+      </div>
+    </div>
+
+    <button id="empSubmitBtn" onclick="handleEmployeeLogin()" style="margin-top: 16px; background: linear-gradient(135deg, #06b6d4, #10b981); font-weight: 700;">
+      Sign In to Portal
+    </button>
+
+    <p id="empLoginMsg" style="font-size: 13px; text-align: center; margin-top: 12px; min-height: 18px;"></p>
+
+    <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 12px; margin-top: 12px; border: 1px dashed rgba(255,255,255,0.12);">
+      <p style="margin:0; font-size:12px; color:#cbd5e1;">💡 <b>First time logging in?</b> Use the temporary password received in your onboarding email. You will be prompted to choose a new password.</p>
+    </div>
+
+    <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 16px; padding-top: 14px; text-align: center;">
+      <p style="font-size: 13px; color: #94a3b8; margin: 0 0 8px;">Manager or Administrator?</p>
+      <a href="admin-login.html" style="color: #818cf8; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+        🛡️ Switch to Admin & Manager Login →
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Mandatory First Login Password Change -->
+<div id="firstLoginChangePasswordModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px;">
+  <div style="background: #0f172a; border: 1px solid #334155; border-radius: 16px; padding: 28px; width: 100%; max-width: 440px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);">
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">
+      <span style="font-size:24px;">🔐</span>
+      <div>
+        <h3 style="margin:0; color:white; font-size:18px;">Set New Password</h3>
+        <p style="margin:2px 0 0; font-size:12px; color:#94a3b8;">Mandatory security step on first login</p>
+      </div>
+    </div>
+    
+    <p style="font-size:13px; color:#cbd5e1; line-height:1.5;">
+      Your account was created with a temporary password. Please set a new personal password (minimum 6 characters) to continue.
+    </p>
+
+    <div style="display:flex; flex-direction:column; gap:12px; margin-top:16px;">
+      <div>
+        <label style="display:block; font-size:12px; color:#94a3b8; margin-bottom:4px; font-weight:600;">Current Temporary Password</label>
+        <input id="firstLoginCurrentPwd" type="password" placeholder="Enter temporary password" style="width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid #334155; color:white;">
+      </div>
+      <div>
+        <label style="display:block; font-size:12px; color:#94a3b8; margin-bottom:4px; font-weight:600;">New Password *</label>
+        <input id="firstLoginNewPwd" type="password" placeholder="Minimum 6 characters" style="width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid #334155; color:white;">
+      </div>
+      <div>
+        <label style="display:block; font-size:12px; color:#94a3b8; margin-bottom:4px; font-weight:600;">Confirm New Password *</label>
+        <input id="firstLoginConfirmPwd" type="password" placeholder="Re-enter new password" style="width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.06); border:1px solid #334155; color:white;">
+      </div>
+    </div>
+
+    <p id="firstLoginPwdMsg" style="font-size:13px; margin:12px 0 0; min-height:18px;"></p>
+
+    <div style="margin-top:16px;">
+      <button id="saveNewPwdBtn" onclick="submitFirstLoginPasswordChange()" style="width:100%; padding:12px; border-radius:10px; background:linear-gradient(135deg, #06b6d4, #10b981); color:white; border:none; font-weight:700; cursor:pointer;">
+        Save Password & Enter Dashboard
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+let tempLoginToken = null;
+let tempLoginUser = null;
+
+async function handleEmployeeLogin() {
+  const username = document.getElementById("empUsername").value.trim();
+  const password = document.getElementById("empPassword").value;
+  const msg = document.getElementById("empLoginMsg");
+  const btn = document.getElementById("empSubmitBtn");
+
+  if (!username || !password) {
+    msg.style.color = "#f43f5e";
+    msg.innerText = "Please enter Employee ID and password";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = "Authenticating...";
+  msg.innerText = "";
+
+  try {
+    const res = await fetch("http://localhost:5000/api/auth/employee/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      msg.style.color = "#f43f5e";
+      msg.innerText = data.error || "Login failed";
+      btn.disabled = false;
+      btn.innerText = "Sign In to Portal";
+      return;
+    }
+
+    tempLoginToken = data.token;
+    tempLoginUser = data.user;
+
+    // Check if temporary password change is mandatory
+    if (data.user.must_change_password) {
+      document.getElementById("firstLoginCurrentPwd").value = password;
+      document.getElementById("firstLoginChangePasswordModal").style.display = "flex";
+      document.getElementById("firstLoginNewPwd").focus();
+      return;
+    }
+
+    // Normal direct login
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    msg.style.color = "#10b981";
+    msg.innerText = `Welcome, ${data.user.employee_name}! Loading portal...`;
+
+    setTimeout(() => {
+      window.location.replace("employee-portal.html");
+    }, 500);
+  } catch (err) {
+    msg.style.color = "#f43f5e";
+    msg.innerText = "Connection error. Ensure backend is running.";
+    btn.disabled = false;
+    btn.innerText = "Sign In to Portal";
+  }
+}
+
+async function submitFirstLoginPasswordChange() {
+  const current_password = document.getElementById("firstLoginCurrentPwd").value;
+  const new_password = document.getElementById("firstLoginNewPwd").value;
+  const confirm_pwd = document.getElementById("firstLoginConfirmPwd").value;
+  const msg = document.getElementById("firstLoginPwdMsg");
+  const btn = document.getElementById("saveNewPwdBtn");
+
+  if (!new_password || new_password.length < 6) {
+    msg.style.color = "#f43f5e";
+    msg.innerText = "New password must be at least 6 characters";
+    return;
+  }
+
+  if (new_password !== confirm_pwd) {
+    msg.style.color = "#f43f5e";
+    msg.innerText = "New passwords do not match";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = "Updating password...";
+  msg.innerText = "";
+
+  try {
+    const res = await fetch("http://localhost:5000/api/auth/change-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tempLoginToken}`
+      },
+      body: JSON.stringify({ current_password, new_password })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      msg.style.color = "#f43f5e";
+      msg.innerText = data.error || "Failed to update password";
+      btn.disabled = false;
+      btn.innerText = "Save Password & Enter Dashboard";
+      return;
+    }
+
+    // Success: save token & proceed
+    tempLoginUser.must_change_password = false;
+    localStorage.setItem("token", tempLoginToken);
+    localStorage.setItem("user", JSON.stringify(tempLoginUser));
+
+    msg.style.color = "#10b981";
+    msg.innerText = "Password updated! Redirecting to Employee Portal...";
+
+    setTimeout(() => {
+      window.location.replace("employee-portal.html");
+    }, 600);
+  } catch (err) {
+    msg.style.color = "#f43f5e";
+    msg.innerText = "Error updating password";
+    btn.disabled = false;
+    btn.innerText = "Save Password & Enter Dashboard";
+  }
+}
+
+// Enter key submission
+document.getElementById("empPassword").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") handleEmployeeLogin();
+});
+</script>
+
+</body>
+</html>
