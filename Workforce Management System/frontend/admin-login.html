@@ -96,8 +96,11 @@ async function handleAdminLogin() {
   btn.innerText = "Verifying credentials...";
   msg.innerText = "";
 
-  try {
-    const res = await fetch("http://localhost:5000/api/auth/admin/login", {
+    const apiBase = (window.location.protocol === "file:" || (window.location.hostname === "localhost" && window.location.port !== "5000" && window.location.port !== ""))
+      ? "http://localhost:5000/api"
+      : "/api";
+
+    const res = await fetch(`${apiBase}/auth/admin/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password })

@@ -1,9 +1,8 @@
-// While testing on your own computer, this points to your local backend.
-// After you deploy the backend to Vercel, replace the line below with
-// your real backend URL, e.g. "https://your-backend-name.vercel.app/api"
-const API = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+// In production on Vercel, requests use relative /api
+// When running locally on independent test ports, fall back to localhost:5000
+const API = (window.location.protocol === "file:" || (window.location.hostname === "localhost" && window.location.port !== "5000" && window.location.port !== ""))
   ? "http://localhost:5000/api"
-  : "https://workforce-management-system-ipp8.vercel.app/api";
+  : "/api";
 
 function getToken() {
   return localStorage.getItem("token");
