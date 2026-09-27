@@ -1337,8 +1337,8 @@ router.get("/admin/dashboard-stats", auth, requireRole("admin", "manager"), asyn
       leave_today: leaveToday,
       punched_in_now: punchedInNow,
       pending_leave_requests: pendingLeaves[0].count,
-      total_working_hours: parseFloat((hoursSum[0].total_hours || 0).toFixed(1)),
-      total_overtime: parseFloat((hoursSum[0].total_overtime || 0).toFixed(1))
+      total_working_hours: parseFloat(Number(hoursSum[0].total_hours || 0).toFixed(1)),
+      total_overtime: parseFloat(Number(hoursSum[0].total_overtime || 0).toFixed(1))
     });
   } catch (err) {
     console.error("Dashboard stats error:", err);
