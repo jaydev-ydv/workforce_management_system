@@ -168,7 +168,12 @@ async function runMigrations() {
     `);
 
     // Ensure default admin user exists
-    const bcrypt = require("bcrypt");
+    let bcrypt;
+    try {
+      bcrypt = require("bcryptjs");
+    } catch (e) {
+      bcrypt = require("bcrypt");
+    }
     const [adminUser] = await pool.execute("SELECT id FROM users WHERE username = 'admin' LIMIT 1");
     if (adminUser.length === 0) {
       const hashed = await bcrypt.hash("admin123", 10);

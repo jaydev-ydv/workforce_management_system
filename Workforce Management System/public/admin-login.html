@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin & Manager Login | ShiftScheduler Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+
+  <script>
+    // If already logged in as admin, auto-redirect
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+    if (token && userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        if (u.role === "admin" || u.role === "manager") {
+          window.location.replace("dashboard.html");
+        }
+      } catch (e) {}
+    }
+  </script>
+</head>
+<body>
+
+<div class="page-shell">
+  <div class="orb orb-one" style="background: radial-gradient(circle, #6366f1 0%, transparent 70%);"></div>
+  <div class="orb orb-two" style="background: radial-gradient(circle, #06b6d4 0%, transparent 70%);"></div>
+
+  <section class="auth-hero">
+    <p class="eyebrow" style="color: #38bdf8;">Supervisory Access</p>
+    <h1>Workforce Hub Enterprise Administration</h1>
+    <p class="hero-copy">
+      Comprehensive managerial portal for scheduling rosters, verifying live attendance, reviewing leaves, and employee lifecycle management.
+    </p>
+
+    <div class="theme-row" aria-hidden="true">
+      <span class="theme-pill" style="background: rgba(99, 102, 241, 0.2); border: 1px solid rgba(99, 102, 241, 0.4); color: #a5b4fc;">Shift Planning</span>
+      <span class="theme-pill" style="background: rgba(6, 182, 212, 0.2); border: 1px solid rgba(6, 182, 212, 0.4); color: #67e8f9;">Attendance Queue</span>
+      <span class="theme-pill" style="background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7;">Leave Review</span>
+    </div>
+  </section>
+
+  <div class="container" style="border-top: 3px solid #6366f1;">
+    <div class="card-glow" style="background: radial-gradient(circle at top, rgba(99, 102, 241, 0.15), transparent 70%);"></div>
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+      <span style="font-size: 20px;">🛡️</span>
+      <p class="form-kicker" style="margin: 0; color: #818cf8;">Admin & Manager Portal</p>
+    </div>
+    
+    <h2>Manager Sign In</h2>
+    <p class="form-subtitle">Enter your supervisory credentials to access management controls.</p>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 14px;">
+      <div>
+        <label style="display:block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; font-weight: 600;">Username or Admin Email</label>
+        <input id="adminUsername" placeholder="e.g. admin" value="admin" style="width: 100%;">
+      </div>
+      <div>
+        <label style="display:block; font-size: 12px; color: #94a3b8; margin-bottom: 4px; font-weight: 600;">Password</label>
+        <input id="adminPassword" type="password" placeholder="Enter admin password" value="admin123" style="width: 100%;">
+      </div>
+    </div>
+
+    <button id="adminSubmitBtn" onclick="handleAdminLogin()" style="margin-top: 16px; background: linear-gradient(135deg, #6366f1, #06b6d4); font-weight: 700;">
+      Authenticate as Admin
+    </button>
+
+    <p id="adminLoginMsg" style="font-size: 13px; text-align: center; margin-top: 12px; min-height: 18px;"></p>
+
+    <div style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 16px; padding-top: 14px; text-align: center;">
+      <p style="font-size: 13px; color: #94a3b8; margin: 0 0 8px;">Are you a staff member?</p>
+      <a href="employee-login.html" style="color: #38bdf8; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+        👤 Switch to Employee Portal Login →
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+async function handleAdminLogin() {
+  const username = document.getElementById("adminUsername").value.trim();
+  const password = document.getElementById("adminPassword").value;
+  const msg = document.getElementById("adminLoginMsg");
+  const btn = document.getElementById("adminSubmitBtn");
+
+  if (!username || !password) {
+    msg.style.color = "#f43f5e";
+    msg.innerText = "Please enter username and password";
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerText = "Verifying credentials...";
+  msg.innerText = "";
+
+    const apiBase = (window.location.protocol === "file:" || (window.location.hostname === "localhost" && window.location.port !== "5000" && window.location.port !== ""))
+      ? "http://localhost:5000/api"
+      : "/api";
+
+    const res = await fetch(`${apiBase}/auth/admin/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      msg.style.color = "#f43f5e";
+      msg.innerText = data.error || "Login failed";
+      btn.disabled = false;
+      btn.innerText = "Authenticate as Admin";
+      return;
+    }
+
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    msg.style.color = "#10b981";
+    msg.innerText = "Access granted! Redirecting to Admin Dashboard...";
+
+    setTimeout(() => {
+      window.location.replace("dashboard.html");
+    }, 500);
+  } catch (err) {
+    msg.style.color = "#f43f5e";
+    msg.innerText = "Connection error. Ensure backend is running.";
+    btn.disabled = false;
+    btn.innerText = "Authenticate as Admin";
+  }
+}
+
+// Enter key submission
+document.getElementById("adminPassword").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") handleAdminLogin();
+});
+</script>
+
+</body>
+</html>

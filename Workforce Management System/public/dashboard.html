@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin & Manager Portal | ShiftScheduler Pro Enterprise</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    // Role-based route guard
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+    if (!token || !userStr) {
+      window.location.replace("admin-login.html");
+    } else {
+      try {
+        const u = JSON.parse(userStr);
+        if (u.role === "employee") {
+          window.location.replace("employee-portal.html");
+        }
+      } catch (e) {
+        window.location.replace("admin-login.html");
+      }
+    }
+  </script>
+
+  <link rel="stylesheet" href="css/dashboard.css">
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<!-- App Header -->
+<header class="header">
+  <div class="logo-wrapper" onclick="showSection('dashboard')">
+    <div class="logo-icon">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+    </div>
+    <span class="logo-text">ShiftScheduler Pro</span>
+    <span class="logo-badge">Admin Portal</span>
+  </div>
+
+  <div class="header-center">
+    <div class="live-clock">
+      <div class="pulse-dot"></div>
+      <span id="liveClockText">Loading time...</span>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <button class="header-btn btn-primary" onclick="quickCreateShiftModal()">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+      </svg>
+      Assign Shift
+    </button>
+
+    <!-- Notification Bell with Dropdown -->
+    <div class="notification-wrap" style="position:relative;">
+      <button class="header-btn btn-secondary" onclick="toggleNotificationDropdown()" style="position:relative; padding:8px 12px;" title="Notifications">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+        <span id="unreadNotificationBadge" class="notification-badge hidden">0</span>
+      </button>
+
+      <div id="notificationDropdown" class="notification-dropdown hidden">
+        <div class="notification-header">
+          <span style="font-weight:700; font-size:13px; color:white;">Notifications</span>
+          <button class="btn-sm btn-secondary" style="font-size:11px; padding:3px 8px;" onclick="markAllNotificationsRead()">Mark all read</button>
+        </div>
+        <div id="notificationList" class="notification-list">
+          <div style="padding:20px; text-align:center; color:var(--text-muted); font-size:13px;">No notifications yet</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="header-btn btn-secondary" onclick="window.location.href='employee-portal.html'" title="Preview Employee Portal">
+      Employee Portal →
+    </button>
+
+    <div class="user-chip">
+      <div class="user-avatar" id="headerUserAvatar">AD</div>
+      <div class="user-info">
+        <span class="user-name" id="headerUserName">Administrator</span>
+        <span class="user-role" id="headerUserRole">Manager</span>
+      </div>
+    </div>
+
+    <button class="header-btn btn-logout" onclick="logout()" title="Logout of session">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
+      Logout
+    </button>
+  </div>
+</header>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <ul class="sidebar-menu">
+    <li class="sidebar-category">Operations</li>
+    <li id="nav-dashboard" class="active" onclick="showSection('dashboard')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+      </svg>
+      Dashboard
+    </li>
+    <li id="nav-employees" onclick="showSection('employees')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+      Employees
+    </li>
+    <li id="nav-addEmployee" onclick="openAddEmployeeForm()">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+      </svg>
+      Add Employee
+    </li>
+    <li id="nav-shifts" onclick="showSection('shifts')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      Shift Management
+    </li>
+
+    <li class="sidebar-category">Supervision</li>
+    <li id="nav-attendance" onclick="showSection('attendance')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+      </svg>
+      Attendance & Punch
+    </li>
+    <li id="nav-leave" onclick="showSection('leave')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+      </svg>
+      Leave Management
+    </li>
+    <li id="nav-reports" onclick="showSection('reports')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+      </svg>
+      Reports & Export
+    </li>
+    <li id="nav-admin" onclick="showSection('admin')">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+      Security & Users
+    </li>
+  </ul>
+
+  <div class="sidebar-footer">
+    <p style="margin:0 0 4px; font-weight:700; color:var(--text-soft);">System Health</p>
+    <span style="display:inline-flex; align-items:center; gap:6px; color:var(--accent-emerald); font-weight:600; font-size:12px;">
+      <span class="pulse-dot"></span> MySQL & SMTP Active
+    </span>
+  </div>
+</nav>
+
+<!-- Main Page Shell -->
+<main class="main">
+
+  <!-- ==============================================
+       1. Dashboard Overview Section
+       ============================================== -->
+  <section id="dashboardSection">
+    
+    <!-- Hero Banner with Greeting -->
+    <div class="hero-banner">
+      <div class="hero-content">
+        <span class="hero-pill">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Managerial Operations Command
+        </span>
+        <h1 class="hero-title" id="welcomeGreeting">Welcome back, Administrator 👋</h1>
+        <p class="hero-desc">
+          Monitor real-time punch activity, confirm shift attendances, dispatch schedules, and manage the complete workforce directory.
+        </p>
+      </div>
+
+      <div class="hero-actions">
+        <button onclick="openAddEmployeeForm()" class="header-btn btn-primary">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+          Add New Employee
+        </button>
+        <button onclick="showSection('shifts')" class="header-btn btn-secondary">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Assign Shift
+        </button>
+        <button onclick="showSection('attendance')" class="header-btn btn-secondary">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          Verify Attendance
+        </button>
+      </div>
+    </div>
+
+    <!-- Live KPI Stat Cards (10 Dynamic Metrics) -->
+    <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:14px; margin-bottom:24px;">
+      <div class="stat-card" onclick="showSection('employees')">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-blue">👥</div>
+          <span class="stat-badge">Staff</span>
+        </div>
+        <div>
+          <div class="stat-value" id="statTotalEmployees">0</div>
+          <p class="stat-label">Total Employees</p>
+        </div>
+      </div>
+
+      <div class="stat-card" onclick="showSection('employees')">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-green">🟢</div>
+          <span class="stat-badge">Active</span>
+        </div>
+        <div>
+          <div class="stat-value" id="statActiveEmployees">0</div>
+          <p class="stat-label">Active Employees</p>
+        </div>
+      </div>
+
+      <div class="stat-card" onclick="showSection('attendance')">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-green">✅</div>
+          <span class="stat-badge">Confirmed</span>
+        </div>
+        <div>
+          <div class="stat-value" id="statPresentToday">0</div>
+          <p class="stat-label">Present Today</p>
+        </div>
+      </div>
+
+      <div class="stat-card" onclick="showSection('attendance')">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-amber">🕒</div>
+          <span class="stat-badge" style="background:#f59e0b; color:black;">Pending</span>
+        </div>
+        <div>
+          <div class="stat-value" id="statPunchedInNow">0</div>
+          <p class="stat-label">Currently Punched In</p>
+        </div>
+      </div>
+
+      <div class="stat-card" onclick="showSection('attendance')">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper" style="background:rgba(239, 68, 68, 0.2); color:#f87171;">❌</div>
+          <span class="stat-badge" style="background:#ef4444;">Absent</span>
+        </div>
+        <div>
+          <div class="stat-value" id="statAbsentToday">0</div>
+          <p class="stat-label">Absent Today</p>
+        </div>
+      </div>
+
+      <div class="stat-card" onclick="showSection('leave')">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-amber">🌴</div>
+          <span class="stat-badge">Time-off</span>
+        </div>
+        <div>
+          <div class="stat-value" id="statOnLeave">0</div>
+          <p class="stat-label">On Leave Today</p>
+        </div>
+      </div>
+
+      <div class="stat-card" onclick="showSection('leave')">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-purple">⏳</div>
+          <span class="stat-badge" style="background:#a855f7;">Pending</span>
+        </div>
+        <div>
+          <div class="stat-value" id="statPendingLeaves">0</div>
+          <p class="stat-label">Pending Leave Requests</p>
+        </div>
+      </div>
+
+      <div class="stat-card" onclick="showSection('shifts')">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-purple">📅</div>
+          <span class="stat-badge">Today</span>
+        </div>
+        <div>
+          <div class="stat-value" id="statTodayShifts">0</div>
+          <p class="stat-label">Scheduled Shifts Today</p>
+        </div>
+      </div>
+
+      <div class="stat-card" onclick="showSection('reports')">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-blue">⏱️</div>
+          <span class="stat-badge">Logged</span>
+        </div>
+        <div>
+          <div class="stat-value" id="statCompletedHours">0<span style="font-size:1.1rem; color:var(--text-soft);">h</span></div>
+          <p class="stat-label">Total Working Hours</p>
+        </div>
+      </div>
+
+      <div class="stat-card" onclick="showSection('reports')">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-amber">⚡</div>
+          <span class="stat-badge" style="background:#eab308; color:black;">OT</span>
+        </div>
+        <div>
+          <div class="stat-value" id="statTotalOvertime">0<span style="font-size:1.1rem; color:var(--text-soft);">h</span></div>
+          <p class="stat-label">Total Overtime Hours</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analytics Charts Row (Chart.js) -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title-wrap">
+            <div class="chart-indicator"></div>
+            <h3>Shift Status Distribution</h3>
+          </div>
+          <span class="stat-badge">Real-Time</span>
+        </div>
+        <div class="chart-container-box">
+          <canvas id="shiftStatusChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title-wrap">
+            <div class="chart-indicator" style="background:var(--accent-purple);"></div>
+            <h3>Staff Completed Hours</h3>
+          </div>
+          <span class="stat-badge">Top Performers</span>
+        </div>
+        <div class="chart-container-box">
+          <canvas id="employeeHoursChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance Verification Queue Banner -->
+    <div id="adminVerificationQueueCard" class="card hidden" style="margin-bottom:24px; border-left:4px solid var(--accent-amber); background:linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(15, 23, 42, 0.9));">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="pulse-dot" style="background:#f59e0b; box-shadow:0 0 10px #f59e0b;"></span>
+          <h3 style="margin:0; font-size:17px; color:white;">Attendance Verification Queue (<span id="pendingPunchCount">0</span> Staff Punched In)</h3>
+        </div>
+        <span style="font-size:12px; color:var(--accent-amber); font-weight:700;">Action Required by Manager</span>
+      </div>
+      <p style="margin:0 0 14px; font-size:13px; color:#cbd5e1;">The following employees have punched in for their assigned shifts. Confirm presence to officially certify working hours.</p>
+      <div id="pendingPunchList" style="display:flex; flex-direction:column; gap:10px;"></div>
+    </div>
+
+    <!-- Live Shift Roster Widget with Delete Button -->
+    <div class="roster-card">
+      <div class="roster-header">
+        <div>
+          <h3>Live Shift Roster</h3>
+          <p style="margin:0; font-size:13px; color:var(--text-soft);">Today's and upcoming shift roster with 1-click status actions & deletion</p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="header-btn btn-secondary btn-sm" onclick="showSection('shifts')">Full Calendar →</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Shift Type</th>
+              <th>Date</th>
+              <th>Timing</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="dashboardRosterBody">
+            <tr>
+              <td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted);">
+                Loading live shifts data...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ==============================================
+       2. Employees Section (Directory & Add Employee)
+       ============================================== -->
+  <section id="employeesSection" class="hidden">
+    <div class="section-toolbar">
+      <div>
+        <h2>Staff Directory</h2>
+        <p style="margin:0; color:var(--text-soft); font-size:14px;">Manage employee records, job roles, attendance percentages, and credentials</p>
+      </div>
+
+      <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+        <div class="search-bar">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input id="employeeSearchInput" placeholder="Search employees by name, ID, or role..." oninput="filterEmployees()">
+        </div>
+
+        <select id="empFilterDept" onchange="filterEmployees()" style="padding:10px 14px; border-radius:10px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); color:white;">
+          <option value="">All Departments</option>
+          <option value="Operations">Operations</option>
+          <option value="Engineering">Engineering</option>
+          <option value="Logistics">Logistics</option>
+          <option value="Customer Support">Customer Support</option>
+          <option value="Human Resources">Human Resources</option>
+        </select>
+
+        <button class="btn-primary" onclick="openAddEmployeeForm()">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Add New Employee
+        </button>
+      </div>
+    </div>
+
+    <!-- Complete Employee Registration Form (Collapsible) -->
+    <div id="addEmployeeFormContainer" class="form-box hidden" style="margin-bottom:28px; border:1px solid rgba(99, 102, 241, 0.4);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <div>
+          <h3 style="margin:0; font-size:18px; color:white;">Register New Employee</h3>
+          <p style="margin:2px 0 0; font-size:13px; color:var(--text-soft);">Auto-generates unique Employee ID & temporary password, sends onboarding email</p>
+        </div>
+        <button class="btn-secondary btn-sm" onclick="toggleEmployeeAddForm(false)">Close Form</button>
+      </div>
+
+      <!-- Category 1: Personal Information -->
+      <h4 style="color:#38bdf8; margin:16px 0 8px; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+        1. Personal Information
+      </h4>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+        <div class="input-group">
+          <label class="input-label">Full Name *</label>
+          <input id="emp_name" placeholder="e.g. Alexander Vance">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Email Address *</label>
+          <input id="emp_email" type="email" placeholder="e.g. alexander@example.com">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Phone Number *</label>
+          <input id="emp_phone" placeholder="e.g. +1 555-0192">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Date of Birth</label>
+          <input id="emp_dob" type="date">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Gender</label>
+          <select id="emp_gender">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Non-Binary">Non-Binary</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="input-group" style="grid-column: 1 / -1;">
+          <label class="input-label">Residential Address</label>
+          <input id="emp_address" placeholder="e.g. 742 Evergreen Terrace, Springfield">
+        </div>
+      </div>
+
+      <!-- Category 2: Employment Information -->
+      <h4 style="color:#a855f7; margin:20px 0 8px; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+        2. Employment Details
+      </h4>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+        <div class="input-group">
+          <label class="input-label">Department *</label>
+          <select id="emp_department">
+            <option value="Operations">Operations</option>
+            <option value="Engineering">Engineering</option>
+            <option value="Logistics">Logistics</option>
+            <option value="Customer Support">Customer Support</option>
+            <option value="Human Resources">Human Resources</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Job Role *</label>
+          <input id="emp_role" placeholder="e.g. Senior Shift Lead">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Designation</label>
+          <input id="emp_designation" placeholder="e.g. Lead Operator">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Joining Date</label>
+          <input id="emp_joining_date" type="date">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Employment Type</label>
+          <select id="emp_employment_type">
+            <option value="Full-Time">Full-Time</option>
+            <option value="Part-Time">Part-Time</option>
+            <option value="Contract">Contract</option>
+            <option value="Intern">Intern</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Assigned Manager</label>
+          <input id="emp_manager" placeholder="e.g. Operations Director">
+        </div>
+      </div>
+
+      <!-- Category 3: Emergency Contact -->
+      <h4 style="color:#f59e0b; margin:20px 0 8px; font-size:13px; text-transform:uppercase; letter-spacing:0.05em; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:4px;">
+        3. Emergency Contact Information
+      </h4>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:12px;">
+        <div class="input-group">
+          <label class="input-label">Contact Person Name</label>
+          <input id="emp_emergency_name" placeholder="e.g. Jane Vance">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Relationship</label>
+          <input id="emp_emergency_relation" placeholder="e.g. Spouse / Parent">
+        </div>
+        <div class="input-group">
+          <label class="input-label">Emergency Phone</label>
+          <input id="emp_emergency_phone" placeholder="e.g. +1 555-0988">
+        </div>
+      </div>
+
+      <div style="grid-column: 1 / -1; display:flex; justify-content:space-between; align-items:center; margin-top:20px; border-top:1px solid rgba(255,255,255,0.1); padding-top:16px; flex-wrap:wrap; gap:10px;">
+        <div style="font-size:12px; color:var(--text-soft);">
+          ✨ Employee ID & Temporary Password will be auto-generated & emailed.
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button class="btn-secondary" onclick="toggleEmployeeAddForm(false)">Cancel</button>
+          <button id="saveEmployeeBtn" class="btn-primary" onclick="addEmployee()">
+            🚀 Create Employee & Send Credentials
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Employee Cards Grid -->
+    <div id="employeeGrid" class="employee-grid"></div>
+  </section>
+
+  <!-- ==============================================
+       3. Shifts Scheduling & Management
+       ============================================== -->
+  <section id="shiftsSection" class="hidden">
+    <div class="section-toolbar">
+      <div>
+        <h2>Shift Management & Calendar</h2>
+        <p style="margin:0; color:var(--text-soft); font-size:14px;">Schedule rosters, define shifts with presets, resolve overlapping conflicts, and track assignments</p>
+      </div>
+      <button class="btn-secondary" onclick="openShiftList()">View Created Shifts List</button>
+    </div>
+
+    <div class="shift-grid">
+      <!-- Left Column: Form & Calendar -->
+      <div>
+        <div class="shift-form-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <h3 id="shiftFormTitle" style="margin:0;">Create Shift Assignment</h3>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="btn-sm btn-secondary" onclick="applyShiftPreset('morning')">Morning</button>
+              <button type="button" class="btn-sm btn-secondary" onclick="applyShiftPreset('evening')">Evening</button>
+              <button type="button" class="btn-sm btn-secondary" onclick="applyShiftPreset('night')">Night</button>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="input-group">
+              <label class="input-label">Shift Title / Type *</label>
+              <input id="title" placeholder="e.g. Day Shift / Morning Roster">
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">Assigned Employee *</label>
+              <input id="employee_id" list="employeeIds" placeholder="Type Employee ID or Name">
+              <datalist id="employeeIds"></datalist>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1.2fr 1fr 1fr; gap:12px;">
+            <div class="input-group">
+              <label class="input-label">Date *</label>
+              <input id="date" type="date">
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">Start Time *</label>
+              <input id="start" type="time">
+            </div>
+
+            <div class="input-group">
+              <label class="input-label">End Time *</label>
+              <input id="end" type="time">
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div class="input-group">
+              <label class="input-label">Break Duration</label>
+              <select id="shiftBreakDuration">
+                <option value="30 Minutes">30 Minutes</option>
+                <option value="45 Minutes">45 Minutes</option>
+                <option value="1 Hour" selected>1 Hour</option>
+                <option value="None">None</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Department</label>
+              <input id="shiftDepartment" placeholder="e.g. Operations / Engineering">
+            </div>
+          </div>
+
+          <div class="shift-actions">
+            <button id="saveShiftButton" class="btn-primary" onclick="saveShift()">Assign Shift</button>
+            <button id="cancelEditButton" class="btn-secondary" onclick="resetShiftForm()" style="display:none;">Cancel Edit</button>
+          </div>
+        </div>
+
+        <h3 style="margin:24px 0 12px;">Interactive Calendar Roster</h3>
+        <div id="calendar"></div>
+      </div>
+
+      <!-- Right Column: Details & List -->
+      <div>
+        <div id="shiftDetails" class="details-box">
+          <h3 style="margin-top:0;">Shift Details</h3>
+          <div class="date-nav">
+            <button class="btn-secondary btn-sm" onclick="changeSelectedDate(-1)">← Prev Day</button>
+            <span id="selectedDateLabel" class="date-badge">No date selected</span>
+            <button class="btn-secondary btn-sm" onclick="changeSelectedDate(1)">Next Day →</button>
+          </div>
+          <p style="color:var(--text-muted);">Click any event or date on the calendar to inspect shift assignments.</p>
+        </div>
+
+        <div id="createdShiftSection" class="details-box list-panel hidden" style="margin-top:20px;">
+          <h3 style="margin-top:0;">Searchable Shift List</h3>
+          <input id="shiftSearchEmployeeId" class="search-input" placeholder="Search by Employee ID or Name..." oninput="renderShiftList()">
+          <div id="shiftList"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==============================================
+       4. Attendance & Punch Verification
+       ============================================== -->
+  <section id="attendanceSection" class="hidden">
+    <div class="section-toolbar">
+      <div>
+        <h2>Attendance Management & Live Verification</h2>
+        <p style="margin:0; color:var(--text-soft); font-size:14px;">Inspect punch-ins, punch-outs, working hours, late minutes, and confirm attendance status</p>
+      </div>
+      <button class="btn-secondary" onclick="loadAttendanceRecords()">Refresh Attendance</button>
+    </div>
+
+    <div class="roster-card">
+      <div class="table-responsive">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Employee</th>
+              <th>Staff ID</th>
+              <th>Shift</th>
+              <th>Scheduled</th>
+              <th>Punch In</th>
+              <th>Punch Out</th>
+              <th>Working Hours</th>
+              <th>Late Min</th>
+              <th>Status</th>
+              <th>Confirm / Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminAttendanceTableBody">
+            <tr>
+              <td colspan="11" style="text-align:center; padding:30px; color:var(--text-muted);">Loading attendance logs...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==============================================
+       5. Leave Management Section
+       ============================================== -->
+  <section id="leaveSection" class="hidden">
+    <div class="section-toolbar">
+      <div>
+        <h2>Employee Leave Applications</h2>
+        <p style="margin:0; color:var(--text-soft); font-size:14px;">Review time-off submissions, approve/reject requests, and provide managerial feedback</p>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn-sm btn-secondary" onclick="filterLeaveRequests('all')">All</button>
+        <button class="btn-sm btn-secondary" onclick="filterLeaveRequests('pending')">Pending Only</button>
+        <button class="btn-sm btn-secondary" onclick="filterLeaveRequests('approved')">Approved</button>
+      </div>
+    </div>
+
+    <div class="roster-card">
+      <div class="table-responsive">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Leave Type</th>
+              <th>Start Date</th>
+              <th>End Date</th>
+              <th>Reason</th>
+              <th>Status</th>
+              <th>Manager Remarks</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="adminLeaveTableBody">
+            <tr>
+              <td colspan="9" style="text-align:center; padding:30px; color:var(--text-muted);">Loading leave applications...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==============================================
+       6. Reports & Export Section
+       ============================================== -->
+  <section id="reportsSection" class="hidden">
+    <div class="section-toolbar">
+      <div>
+        <h2>Workforce Productivity & Hours Reports</h2>
+        <p style="margin:0; color:var(--text-soft); font-size:14px;">Aggregated metrics, completed shift hours, overtime logs, and CSV data export</p>
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn-primary" onclick="exportReportsToCSV()">📥 Export to CSV</button>
+        <button class="btn-secondary" onclick="refreshReports()">Refresh Data</button>
+      </div>
+    </div>
+
+    <div class="roster-card">
+      <div class="table-responsive">
+        <table class="modern-table" id="adminReportsTable">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Department</th>
+              <th>Role</th>
+              <th>Completed Hours</th>
+              <th>Overtime Hours</th>
+              <th>Leaves Taken</th>
+              <th>Pending Shifts</th>
+              <th>Total Assigned</th>
+            </tr>
+          </thead>
+          <tbody id="adminReportsTableBody">
+            <tr>
+              <td colspan="8" style="text-align:center; padding:30px; color:var(--text-muted);">Loading report analytics...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==============================================
+       7. Security & Users Administration
+       ============================================== -->
+  <section id="adminSection" class="hidden">
+    <div class="section-toolbar">
+      <div>
+        <h2>Access, Security & Audit Logs</h2>
+        <p style="margin:0; color:var(--text-soft); font-size:14px;">System credentials, user access overrides, and operational audit trail</p>
+      </div>
+      <button class="btn-secondary" onclick="loadUsers()">Refresh Accounts</button>
+    </div>
+
+    <div class="admin-grid">
+      <!-- Password Reset Card -->
+      <div class="card">
+        <h3>Reset User Password</h3>
+        <p style="font-size:13px; color:var(--text-soft); margin-top:-6px;">Manual administrative override for employee or manager credentials.</p>
+        
+        <div class="admin-form" style="margin-top:14px;">
+          <div class="input-group">
+            <label class="input-label">User ID *</label>
+            <input id="reset_user_id" placeholder="e.g. 1">
+          </div>
+          <div class="input-group">
+            <label class="input-label">New Password *</label>
+            <input id="reset_password" type="password" placeholder="Minimum 6 characters">
+          </div>
+          <button onclick="resetUserPassword()" style="margin-top:6px;">Update Password</button>
+        </div>
+        <p id="adminMsg" style="font-size:13px; margin-top:10px;"></p>
+      </div>
+
+      <!-- Registered Accounts -->
+      <div class="card">
+        <h3>Registered Accounts</h3>
+        <div id="userList" class="list-panel"></div>
+      </div>
+    </div>
+
+    <!-- Audit Logs Section -->
+    <div class="card" style="margin-top:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 style="margin:0;">System Audit Logs</h3>
+        <button class="btn-sm btn-secondary" onclick="loadAuditLogs()">Refresh Logs</button>
+      </div>
+      <div class="table-responsive">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Actor</th>
+              <th>Action</th>
+              <th>Entity</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="auditLogsBody">
+            <tr>
+              <td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">Loading audit records...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Modal: New Employee Created Confirmation -->
+<div id="employeeSuccessModal" class="modal-overlay hidden">
+  <div class="modal-dialog">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+      <div style="width:42px; height:42px; border-radius:12px; background:rgba(16, 185, 129, 0.2); border:1px solid rgba(16, 185, 129, 0.4); display:flex; align-items:center; justify-content:center; color:#34d399; font-size:20px;">
+        🎉
+      </div>
+      <div>
+        <h3 style="margin:0; font-size:18px; color:white;">Employee Account Created</h3>
+        <p style="margin:2px 0 0; font-size:12px; color:var(--text-soft);">Login credentials successfully provisioned</p>
+      </div>
+    </div>
+
+    <div style="background:rgba(255,255,255,0.05); border:1px solid var(--border-subtle); border-radius:8px; padding:16px; margin-bottom:16px;">
+      <p style="margin:6px 0;"><b>Name:</b> <span id="successEmpName" style="color:white;"></span></p>
+      <p style="margin:6px 0;"><b>Employee ID:</b> <code id="successEmpId" style="color:#38bdf8; font-size:15px; font-weight:700;"></code></p>
+      <p style="margin:6px 0;"><b>Temporary Password:</b> <code id="successEmpPwd" style="color:#f43f5e; font-size:15px; font-weight:700;"></code></p>
+      <p style="margin:6px 0;"><b>Email Dispatched:</b> <span id="successEmpEmail" style="color:#cbd5e1;"></span></p>
+    </div>
+
+    <p style="font-size:12px; color:#facc15; margin:0 0 18px; line-height:1.4;">
+      ℹ️ The employee has been emailed these credentials. On their first login, they will be required to change their temporary password.
+    </p>
+
+    <div style="display:flex; justify-content:flex-end;">
+      <button class="btn-primary" onclick="closeEmployeeSuccessModal()">Acknowledge & Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Employee Delete Confirmation -->
+<div id="deleteEmployeeModal" class="modal-overlay hidden">
+  <div class="modal-dialog">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+      <div style="width:42px; height:42px; border-radius:12px; background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.3); display:flex; align-items:center; justify-content:center; color:#f87171; flex-shrink:0;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </div>
+      <div>
+        <h3 style="margin:0; font-size:18px; color:white;">Remove Employee</h3>
+        <p style="margin:2px 0 0; font-size:12px; color:var(--text-soft);">Permanent database deletion action</p>
+      </div>
+    </div>
+
+    <p style="font-size:14px; color:#cbd5e1; line-height:1.5; margin:0 0 16px;">
+      Are you sure you want to remove <b id="deleteModalEmpName" style="color:white;"></b> (<span id="deleteModalEmpId" style="color:var(--accent-cyan); font-weight:600;"></span>) from the database?
+    </p>
+
+    <div style="background:rgba(239, 68, 68, 0.08); border-left:3px solid #ef4444; border-radius:6px; padding:10px 14px; margin-bottom:20px;">
+      <p style="margin:0; font-size:12px; color:#fca5a5; line-height:1.4;">
+        ⚠️ <b>Warning:</b> This will permanently delete the employee's profile, remove their assigned shifts, and revoke their portal login account.
+      </p>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn-secondary" onclick="closeDeleteEmployeeModal()">Cancel</button>
+      <button id="confirmDeleteEmpBtn" class="danger-btn" onclick="executeDeleteEmployee()" style="display:inline-flex; align-items:center; gap:6px;">
+        Confirm Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Shift Delete Confirmation -->
+<div id="deleteShiftModal" class="modal-overlay hidden">
+  <div class="modal-dialog">
+    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+      <div style="width:42px; height:42px; border-radius:12px; background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.3); display:flex; align-items:center; justify-content:center; color:#f87171; flex-shrink:0;">
+        <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </div>
+      <div>
+        <h3 style="margin:0; font-size:18px; color:white;">Delete Scheduled Shift</h3>
+        <p style="margin:2px 0 0; font-size:12px; color:var(--text-soft);">Permanent database removal</p>
+      </div>
+    </div>
+
+    <p style="font-size:14px; color:#cbd5e1; line-height:1.5; margin:0 0 16px;">
+      Are you sure you want to delete <b id="deleteModalShiftTitle" style="color:white;"></b> assigned to <span id="deleteModalShiftEmp" style="color:var(--accent-cyan); font-weight:600;"></span> on <span id="deleteModalShiftDate" style="color:#fcd34d;"></span>?
+    </p>
+
+    <div style="background:rgba(239, 68, 68, 0.08); border-left:3px solid #ef4444; border-radius:6px; padding:10px 14px; margin-bottom:20px;">
+      <p style="margin:0; font-size:12px; color:#fca5a5; line-height:1.4;">
+        ⚠️ <b>Note:</b> This shift assignment and its attendance log will be removed permanently.
+      </p>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:10px;">
+      <button class="btn-secondary" onclick="closeDeleteShiftModal()">Cancel</button>
+      <button id="confirmDeleteShiftBtn" class="danger-btn" onclick="executeDeleteShift()" style="display:inline-flex; align-items:center; gap:6px;">
+        Confirm Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modern Toast Notification Container -->
+<div id="toastContainer" class="toast-container"></div>
+
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Shift Scheduling</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+  <style>
+    :root {
+      --bg-main: #0e132d;
+      --bg-layer: #141c3f;
+      --panel: rgba(255, 255, 255, 0.08);
+      --line: rgba(255, 255, 255, 0.12);
+      --text-main: #ffffff;
+      --text-soft: #d8defe;
+      --blue: #36cfff;
+      --pink: #ff5ea8;
+      --gold: #ffd166;
+      --danger: #ff6b6b;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', Arial, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(54, 207, 255, 0.15), transparent 24%),
+        radial-gradient(circle at bottom left, rgba(255, 94, 168, 0.12), transparent 24%),
+        linear-gradient(180deg, #0e132d 0%, #141c3f 52%, #091122 100%);
+      color: var(--text-main);
+      margin: 0;
+      padding: 28px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--pink), #9b5cff 50%, var(--blue));
+      color: white;
+      font-family: inherit;
+      font-weight: 700;
+      box-shadow: 0 16px 28px rgba(20, 26, 54, 0.34);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 36px rgba(20, 26, 54, 0.38);
+      filter: saturate(1.08);
+    }
+
+    .danger-btn {
+      background: linear-gradient(135deg, #ff6b6b, #ee5253);
+    }
+
+    .danger-btn:hover {
+      filter: saturate(1.06);
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+    }
+
+    .form-box {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.06));
+      padding: 22px;
+      border-radius: 22px;
+      margin-bottom: 20px;
+      border: 1px solid var(--line);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(12px);
+    }
+
+    .form-box input,
+    .form-box select {
+      width: 100%;
+      margin: 8px 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      box-sizing: border-box;
+      font-family: inherit;
+    }
+
+    .form-box select option {
+      color: #111827;
+    }
+
+    #calendar {
+      background: white;
+      color: black;
+      padding: 14px;
+      border-radius: 22px;
+      box-shadow: 0 22px 42px rgba(0, 0, 0, 0.24);
+    }
+
+    #calendar .fc-daygrid-day-frame {
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #calendar .fc-daygrid-day-top {
+      justify-content: center;
+      align-items: center;
+      padding-top: 14px;
+    }
+
+    #calendar .fc-daygrid-day-number {
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 700;
+      margin: 0 auto;
+    }
+
+    .details-box {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.06));
+      padding: 20px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(12px);
+    }
+
+    .shift-box {
+      background: linear-gradient(135deg, rgba(54, 207, 255, 0.14), rgba(255, 94, 168, 0.14));
+      padding: 14px;
+      margin: 8px 0;
+      border-radius: 14px;
+      line-height: 1.6;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .shift-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .list-panel {
+      max-height: 420px;
+      overflow-y: auto;
+    }
+
+    .date-nav {
+      display: flex;
+      gap: 10px;
+      margin: 12px 0;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .date-badge {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(54, 207, 255, 0.18), rgba(255, 209, 102, 0.18));
+      font-size: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .search-input {
+      width: 100%;
+      margin: 12px 0;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 960px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 18px;
+      }
+
+      .date-nav,
+      .shift-actions,
+      .top-bar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Shift Scheduling</h1>
+
+<div class="top-bar">
+  <div class="shift-actions" style="margin-top:0;">
+    <button onclick="goDashboard()">Back to Dashboard</button>
+    <button onclick="openShiftList()">Created Shifts</button>
+  </div>
+</div>
+
+<div class="container">
+  <div>
+    <div class="form-box">
+      <h3 id="shiftFormTitle">Create Shift</h3>
+
+      <select id="title">
+        <option value="">Select shift type</option>
+        <option value="Day Shift">Day Shift</option>
+        <option value="Night Shift">Night Shift</option>
+        <option value="Overtime">Overtime</option>
+      </select>
+      <input id="employee_id" list="employeeIds" placeholder="Type Employee ID">
+      <datalist id="employeeIds"></datalist>
+      <input id="date" type="date">
+      <input id="start" type="time">
+      <input id="end" type="time">
+
+      <div class="shift-actions">
+        <button id="saveShiftButton" onclick="saveShift()">Create Shift</button>
+        <button id="cancelEditButton" onclick="resetShiftForm()" style="display:none;">Cancel Edit</button>
+      </div>
+    </div>
+
+      <h3>Calendar</h3>
+      <div id="calendar"></div>
+
+      <div class="shift-actions">
+        <button onclick="openShiftList()">View Created Shift List</button>
+      </div>
+    </div>
+
+  <div>
+    <div id="shiftDetails" class="details-box">
+      <h3>Shift Details</h3>
+      <div class="date-nav">
+        <button onclick="changeSelectedDate(-1)">Previous Day</button>
+        <span id="selectedDateLabel" class="date-badge">No date selected</span>
+        <button onclick="changeSelectedDate(1)">Next Day</button>
+      </div>
+      <p>Click a date or event</p>
+    </div>
+
+    <div id="createdShiftSection" class="details-box list-panel hidden" style="margin-top:20px;">
+      <h3>Created Shifts</h3>
+      <input id="shiftSearchEmployeeId" class="search-input" placeholder="Search by Employee ID" oninput="renderShiftList()">
+      <div id="shiftList"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/schedule.js"></script>
+
+</body>
+</html>

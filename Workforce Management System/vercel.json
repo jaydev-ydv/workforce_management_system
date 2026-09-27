@@ -3,13 +3,13 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
-    { "source": "/admin/login", "destination": "/frontend/admin-login.html" },
-    { "source": "/employee/login", "destination": "/frontend/employee-login.html" },
-    { "source": "/admin/:path*", "destination": "/frontend/dashboard.html" },
-    { "source": "/admin", "destination": "/frontend/dashboard.html" },
-    { "source": "/employee/:path*", "destination": "/frontend/employee-portal.html" },
-    { "source": "/employee", "destination": "/frontend/employee-portal.html" },
-    { "source": "/", "destination": "/frontend/index.html" },
-    { "source": "/(.*)", "destination": "/frontend/$1" }
+    { "source": "/admin/login", "destination": "/admin-login.html" },
+    { "source": "/employee/login", "destination": "/employee-login.html" },
+    { "source": "/admin/:path*", "destination": "/dashboard.html" },
+    { "source": "/admin", "destination": "/dashboard.html" },
+    { "source": "/employee/:path*", "destination": "/employee-portal.html" },
+    { "source": "/employee", "destination": "/employee-portal.html" },
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/(.*)", "destination": "/$1" }
   ]
 }

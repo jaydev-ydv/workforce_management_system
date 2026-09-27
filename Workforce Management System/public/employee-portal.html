@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Portal | Workforce Management System</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Role-based route guard -->
+  <script>
+    const token = localStorage.getItem("token");
+    const userStr = localStorage.getItem("user");
+    if (!token || !userStr) {
+      window.location.replace("employee-login.html");
+    }
+  </script>
+
+  <!-- FullCalendar CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="css/dashboard.css">
+  <style>
+    .portal-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 24px 20px 80px;
+    }
+
+    .punch-hero-card {
+      background: 
+        radial-gradient(circle at top right, rgba(16, 185, 129, 0.22), transparent 35%),
+        radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.15), transparent 40%),
+        linear-gradient(135deg, rgba(17, 26, 60, 0.95), rgba(11, 17, 42, 0.98));
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      margin-bottom: 26px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .punch-btn-group {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .punch-btn {
+      padding: 16px 28px;
+      font-size: 16px;
+      font-weight: 800;
+      border-radius: var(--radius-md);
+      color: white;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.25s ease;
+    }
+
+    .punch-btn-in {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45);
+    }
+    .punch-btn-in:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(16, 185, 129, 0.6);
+    }
+
+    .punch-btn-out {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      box-shadow: 0 8px 24px rgba(245, 158, 11, 0.45);
+    }
+    .punch-btn-out:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(245, 158, 11, 0.6);
+    }
+
+    .punch-btn:disabled {
+      background: #334155 !important;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+      opacity: 0.65;
+    }
+
+    .emp-meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      font-size: 12px;
+      color: var(--text-soft);
+    }
+
+    .emp-meta-badge strong {
+      color: var(--text-main);
+    }
+
+    .profile-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .profile-field-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 14px;
+    }
+
+    .profile-field-label {
+      color: var(--text-soft);
+      font-weight: 500;
+    }
+
+    .profile-field-val {
+      font-weight: 700;
+      color: var(--text-main);
+      text-align: right;
+    }
+
+    /* Modal Overlay */
+    .portal-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="logo-wrapper">
+    <div class="logo-icon" style="background: linear-gradient(135deg, var(--accent-emerald), var(--accent-cyan));">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    </div>
+    <span class="logo-text">Workforce Pro</span>
+    <span class="logo-badge" style="color:var(--accent-emerald); border-color:rgba(16,185,129,0.35); background:rgba(16,185,129,0.15);">
+      Employee Portal
+    </span>
+  </div>
+
+  <div class="header-center">
+    <div class="live-clock">
+      <div class="pulse-dot"></div>
+      <span id="liveClockText">Live Time</span>
+    </div>
+  </div>
+
+  <div class="header-right">
+    <!-- Notification Bell -->
+    <div style="position: relative;">
+      <button class="header-btn" id="empNotificationBtn" onclick="toggleEmpNotifications()" title="Notifications">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+        <span class="notification-badge" id="empNotifBadge" style="display:none;">0</span>
+      </button>
+
+      <!-- Dropdown -->
+      <div id="empNotificationDropdown" class="notification-dropdown" style="display:none;">
+        <div class="notification-header">
+          <span style="font-weight:700; font-size:14px;">Notifications</span>
+          <button class="btn-sm btn-secondary" onclick="markAllNotificationsRead()" style="font-size:11px; padding:3px 8px;">Mark All Read</button>
+        </div>
+        <div class="notification-list" id="empNotifDropdownList">
+          <div style="padding:20px; text-align:center; color:var(--text-soft); font-size:13px;">No notifications yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Profile Chip -->
+    <div class="user-chip">
+      <div class="user-avatar" id="empAvatar">EM</div>
+      <div class="user-info">
+        <span class="user-name" id="empHeaderName">Employee</span>
+        <span class="user-role" id="empHeaderId">Staff ID</span>
+      </div>
+    </div>
+
+    <!-- Admin Portal Switch Button (if user is admin/manager) -->
+    <button id="adminPortalSwitchBtn" class="header-btn btn-secondary" onclick="window.location.href='dashboard.html'" style="display:none;" title="Switch to Admin Portal">
+      Admin Portal →
+    </button>
+
+    <button class="header-btn btn-logout" onclick="logout()" title="Sign Out">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+      </svg>
+      Logout
+    </button>
+  </div>
+</header>
+
+<!-- Main Portal Container -->
+<main class="portal-container">
+
+  <!-- Horizontal Navigation Bar -->
+  <nav class="portal-nav-bar" id="portalNavBar">
+    <div class="portal-nav-item active" data-tab="emp-dashboard" onclick="showEmployeeTab('emp-dashboard')">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      Dashboard
+    </div>
+    <div class="portal-nav-item" data-tab="emp-schedule" onclick="showEmployeeTab('emp-schedule')">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      My Schedule
+    </div>
+    <div class="portal-nav-item" data-tab="emp-attendance" onclick="showEmployeeTab('emp-attendance')">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+      Attendance
+    </div>
+    <div class="portal-nav-item" data-tab="emp-reports" onclick="showEmployeeTab('emp-reports')">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      Reports
+    </div>
+    <div class="portal-nav-item" data-tab="emp-leave" onclick="showEmployeeTab('emp-leave')">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      Leave Requests
+    </div>
+    <div class="portal-nav-item" data-tab="emp-notifications" onclick="showEmployeeTab('emp-notifications')">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+      Notifications
+    </div>
+    <div class="portal-nav-item" data-tab="emp-profile" onclick="showEmployeeTab('emp-profile')">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+      Profile
+    </div>
+  </nav>
+
+  <!-- ===================================================
+       TAB 1: EMPLOYEE DASHBOARD
+       =================================================== -->
+  <section id="tab-emp-dashboard" class="portal-tab-content">
+    
+    <!-- Hero Attendance Desk -->
+    <div class="punch-hero-card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:24px;">
+        <div style="max-width: 650px;">
+          <span class="hero-pill" style="color:var(--accent-emerald); border-color:rgba(16,185,129,0.3); background:rgba(16,185,129,0.12);">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Live Attendance Desk
+          </span>
+
+          <h1 class="hero-title" id="punchHeroGreeting">Welcome, Employee 👋</h1>
+
+          <!-- Meta Pill Tags -->
+          <div style="display:flex; flex-wrap:wrap; gap:8px; margin: 12px 0 16px;">
+            <span class="emp-meta-badge">ID: <strong id="heroEmpId">EMP...</strong></span>
+            <span class="emp-meta-badge">Dept: <strong id="heroEmpDept">General</strong></span>
+            <span class="emp-meta-badge">Role: <strong id="heroEmpRole">Staff</strong></span>
+            <span class="emp-meta-badge">Joined: <strong id="heroEmpJoined">-</strong></span>
+          </div>
+
+          <p class="hero-desc" id="punchHeroSubtext" style="font-size:15px; margin-bottom:14px;">
+            Loading today's shift schedule...
+          </p>
+
+          <div id="punchStatusContainer">
+            <!-- Populated dynamically with shift status details -->
+          </div>
+        </div>
+
+        <!-- Punch Action Button Desk -->
+        <div style="display:flex; flex-direction:column; gap:12px; align-self:center;">
+          <div class="punch-btn-group" id="punchActionArea">
+            <button class="punch-btn punch-btn-in" id="btnPunchIn" onclick="handlePunchIn()">
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+              </svg>
+              PUNCH IN
+            </button>
+            <button class="punch-btn punch-btn-out" id="btnPunchOut" onclick="handlePunchOut()" disabled>
+              <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              PUNCH OUT
+            </button>
+          </div>
+          <span style="font-size:12px; color:var(--text-soft); text-align:center;">
+            * System uses official server-side timestamps for accuracy
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Metric Overview Cards -->
+    <div class="kpi-grid">
+      <!-- Attendance % -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-green">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <span class="stat-badge">Reliability</span>
+        </div>
+        <div>
+          <div class="stat-value" id="kpiAttendanceRate">0%</div>
+          <p class="stat-label">Attendance Percentage</p>
+        </div>
+      </div>
+
+      <!-- Scheduled Shifts -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-blue">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <span class="stat-badge">Roster</span>
+        </div>
+        <div>
+          <div class="stat-value" id="kpiTotalScheduled">0</div>
+          <p class="stat-label">Total Scheduled Shifts</p>
+        </div>
+      </div>
+
+      <!-- Attended Shifts -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-cyan">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <span class="stat-badge">Completed</span>
+        </div>
+        <div>
+          <div class="stat-value" id="kpiTotalAttended">0</div>
+          <p class="stat-label">Total Attended Shifts</p>
+        </div>
+      </div>
+
+      <!-- Absent Days -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-rose">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </div>
+          <span class="stat-badge">Absence</span>
+        </div>
+        <div>
+          <div class="stat-value" id="kpiAbsentDays">0</div>
+          <p class="stat-label">Absent Days</p>
+        </div>
+      </div>
+
+      <!-- Leave Days -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-purple">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          </div>
+          <span class="stat-badge">Approved</span>
+        </div>
+        <div>
+          <div class="stat-value" id="kpiLeaveDays">0</div>
+          <p class="stat-label">Leave Days Recorded</p>
+        </div>
+      </div>
+
+      <!-- Total Working Hours -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-indigo">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <span class="stat-badge">Logged</span>
+        </div>
+        <div>
+          <div class="stat-value" id="kpiTotalHours">0<span style="font-size:1.1rem; color:var(--text-soft); font-weight:600;">h</span></div>
+          <p class="stat-label">Total Working Hours</p>
+        </div>
+      </div>
+
+      <!-- Overtime Hours -->
+      <div class="stat-card">
+        <div class="stat-header">
+          <div class="stat-icon-wrapper stat-icon-amber">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <span class="stat-badge">Extra</span>
+        </div>
+        <div>
+          <div class="stat-value" id="kpiOvertimeHours">0<span style="font-size:1.1rem; color:var(--text-soft); font-weight:600;">h</span></div>
+          <p class="stat-label">Overtime Hours</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Shifts Overview Card -->
+    <div class="card" style="margin-top:24px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
+        <div>
+          <h3 style="margin:0 0 4px; font-size:18px;">Upcoming & Recent Assigned Shifts</h3>
+          <p style="margin:0; font-size:13px; color:var(--text-soft);">Quick view of your scheduled shifts assigned by management</p>
+        </div>
+        <button class="btn-sm btn-secondary" onclick="showEmployeeTab('emp-schedule')">
+          View Full Schedule →
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Shift Name</th>
+              <th>Date</th>
+              <th>Timings</th>
+              <th>Break</th>
+              <th>Status</th>
+              <th>Punch In</th>
+              <th>Punch Out</th>
+            </tr>
+          </thead>
+          <tbody id="empDashboardShiftsBody">
+            <tr>
+              <td colspan="7" style="text-align:center; padding:28px; color:var(--text-muted);">
+                Loading shift records...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       TAB 2: MY SCHEDULE (Calendar & List View)
+       =================================================== -->
+  <section id="tab-emp-schedule" class="portal-tab-content" style="display:none;">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:14px;">
+        <div>
+          <h2 style="margin:0 0 4px; font-size:20px;">My Work Schedule</h2>
+          <p style="margin:0; font-size:13px; color:var(--text-soft);">Assigned shifts and roster by administrative management (Read-only)</p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-sm btn-primary" id="btnViewCalendar" onclick="toggleScheduleView('calendar')">📅 Calendar View</button>
+          <button class="btn-sm btn-secondary" id="btnViewList" onclick="toggleScheduleView('list')">📋 List View</button>
+        </div>
+      </div>
+
+      <!-- Calendar Container -->
+      <div id="empCalendarView">
+        <div id="empCalendar" style="min-height:550px;"></div>
+      </div>
+
+      <!-- List Container -->
+      <div id="empListView" style="display:none;">
+        <div style="display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap;">
+          <button class="btn-sm btn-secondary" onclick="filterScheduleList('all')">All Shifts</button>
+          <button class="btn-sm btn-secondary" onclick="filterScheduleList('upcoming')">Upcoming Shifts</button>
+          <button class="btn-sm btn-secondary" onclick="filterScheduleList('past')">Past Shifts</button>
+        </div>
+        <div class="table-responsive">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Shift Name</th>
+                <th>Department</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Break</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="empScheduleListBody">
+              <tr><td colspan="7" style="text-align:center; padding:24px;">Loading schedule...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       TAB 3: ATTENDANCE
+       =================================================== -->
+  <section id="tab-emp-attendance" class="portal-tab-content" style="display:none;">
+    
+    <!-- Summary bar -->
+    <div class="kpi-grid" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-header"><span class="stat-badge">Total</span></div>
+        <div class="stat-value" id="attSummaryTotal">0</div>
+        <p class="stat-label">Total Shifts</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header"><span class="stat-badge">Present</span></div>
+        <div class="stat-value" id="attSummaryAttended">0</div>
+        <p class="stat-label">Attended / Present</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header"><span class="stat-badge">Absent</span></div>
+        <div class="stat-value" id="attSummaryAbsent">0</div>
+        <p class="stat-label">Absent Days</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header"><span class="stat-badge">Late</span></div>
+        <div class="stat-value" id="attSummaryLate">0</div>
+        <p class="stat-label">Late Arrivals</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header"><span class="stat-badge">Leave</span></div>
+        <div class="stat-value" id="attSummaryLeave">0</div>
+        <p class="stat-label">Leave Days</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header"><span class="stat-badge">Hours</span></div>
+        <div class="stat-value" id="attSummaryHours">0h</div>
+        <p class="stat-label">Total Hours</p>
+      </div>
+      <div class="stat-card">
+        <div class="stat-header"><span class="stat-badge">Overtime</span></div>
+        <div class="stat-value" id="attSummaryOvertime">0h</div>
+        <p class="stat-label">Total Overtime</p>
+      </div>
+    </div>
+
+    <!-- Attendance Table Card -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
+        <div>
+          <h3 style="margin:0 0 4px; font-size:18px;">Attendance History & Records</h3>
+          <p style="margin:0; font-size:13px; color:var(--text-soft);">Detailed punch-in, punch-out, and verification log</p>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+          <button class="btn-sm btn-secondary" onclick="filterAttendanceRange('today')">Today</button>
+          <button class="btn-sm btn-secondary" onclick="filterAttendanceRange('week')">This Week</button>
+          <button class="btn-sm btn-secondary" onclick="filterAttendanceRange('month')">This Month</button>
+          <button class="btn-sm btn-secondary" onclick="filterAttendanceRange('all')">All</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Shift</th>
+              <th>Scheduled Time</th>
+              <th>Punch In</th>
+              <th>Punch Out</th>
+              <th>Working Hours</th>
+              <th>Late (Mins)</th>
+              <th>Overtime</th>
+              <th>Status</th>
+              <th>Admin Verification</th>
+            </tr>
+          </thead>
+          <tbody id="empAttendanceTableBody">
+            <tr>
+              <td colspan="10" style="text-align:center; padding:28px; color:var(--text-muted);">
+                Loading attendance log...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       TAB 4: REPORTS
+       =================================================== -->
+  <section id="tab-emp-reports" class="portal-tab-content" style="display:none;">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:14px;">
+        <div>
+          <h2 style="margin:0 0 4px; font-size:20px;">My Performance & Hours Report</h2>
+          <p style="margin:0; font-size:13px; color:var(--text-soft);">Comprehensive summary of attendance metrics, working hours, and overtime</p>
+        </div>
+        <button class="btn-sm btn-primary" onclick="exportEmployeeReportCSV()">
+          📥 Export Report (CSV)
+        </button>
+      </div>
+
+      <!-- Report KPI Summary Cards -->
+      <div class="kpi-grid" style="margin-bottom:24px;">
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-badge">Attendance Rate</span></div>
+          <div class="stat-value" id="repAttendanceRate">0%</div>
+          <p class="stat-label">Attendance Rate</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-badge">Total Shifts</span></div>
+          <div class="stat-value" id="repTotalScheduled">0</div>
+          <p class="stat-label">Scheduled Shifts</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-badge">Attended</span></div>
+          <div class="stat-value" id="repTotalAttended">0</div>
+          <p class="stat-label">Attended Shifts</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-badge">Hours</span></div>
+          <div class="stat-value" id="repTotalHours">0h</div>
+          <p class="stat-label">Total Working Hours</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-badge">Average</span></div>
+          <div class="stat-value" id="repAvgHours">0h</div>
+          <p class="stat-label">Avg Hours / Shift</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-badge">Overtime</span></div>
+          <div class="stat-value" id="repTotalOvertime">0h</div>
+          <p class="stat-label">Total Overtime Hours</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-badge">Late</span></div>
+          <div class="stat-value" id="repLateArrivals">0</div>
+          <p class="stat-label">Late Arrivals</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-badge">Leaves</span></div>
+          <div class="stat-value" id="repApprovedLeaves">0</div>
+          <p class="stat-label">Leaves Taken</p>
+        </div>
+      </div>
+
+      <!-- Chart: Working Hours Per Shift -->
+      <div style="background:rgba(255,255,255,0.02); border:1px solid var(--border-subtle); border-radius:var(--radius-lg); padding:20px; margin-bottom:24px;">
+        <h4 style="margin:0 0 14px; font-size:16px;">Working Hours Log (Recent Shifts)</h4>
+        <div style="height:260px; position:relative;">
+          <canvas id="empHoursChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Detailed Breakdown Table -->
+      <h4 style="margin:20px 0 10px; font-size:16px;">Shift-by-Shift Breakdown</h4>
+      <div class="table-responsive">
+        <table class="modern-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Shift</th>
+              <th>Scheduled</th>
+              <th>Punch In</th>
+              <th>Punch Out</th>
+              <th>Logged Hours</th>
+              <th>Overtime</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="empReportTableBody">
+            <tr><td colspan="8" style="text-align:center; padding:24px;">Loading report records...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       TAB 5: LEAVE REQUESTS
+       =================================================== -->
+  <section id="tab-emp-leave" class="portal-tab-content" style="display:none;">
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:24px;">
+      
+      <!-- Submit Leave Request Form -->
+      <div class="card">
+        <div style="margin-bottom:18px;">
+          <h3 style="margin:0 0 4px; font-size:18px;">Submit Leave Application</h3>
+          <p style="margin:0; font-size:13px; color:var(--text-soft);">Apply for planned absence or sick leave for managerial approval</p>
+        </div>
+
+        <form id="empLeaveForm" onsubmit="handleLeaveSubmit(event)">
+          <div class="input-group">
+            <label class="input-label">Leave Type *</label>
+            <select id="leaveTypeInput" required>
+              <option value="Sick Leave">Sick Leave</option>
+              <option value="Casual Leave">Casual Leave</option>
+              <option value="Annual / Paid Leave">Annual / Paid Leave</option>
+              <option value="Emergency Leave">Emergency Leave</option>
+              <option value="Unpaid Leave">Unpaid Leave</option>
+            </select>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:14px;">
+            <div class="input-group">
+              <label class="input-label">Start Date *</label>
+              <input type="date" id="leaveStartDate" required>
+            </div>
+            <div class="input-group">
+              <label class="input-label">End Date *</label>
+              <input type="date" id="leaveEndDate" required>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Reason for Absence *</label>
+            <textarea id="leaveReasonInput" rows="4" placeholder="Briefly describe the reason for your leave..." required></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary" style="width:100%; margin-top:8px;">
+            Submit Leave Application
+          </button>
+        </form>
+      </div>
+
+      <!-- Leave Requests History Card -->
+      <div class="card">
+        <div style="margin-bottom:18px;">
+          <h3 style="margin:0 0 4px; font-size:18px;">My Leave Applications</h3>
+          <p style="margin:0; font-size:13px; color:var(--text-soft);">Track approval status and feedback from management</p>
+        </div>
+
+        <div class="table-responsive">
+          <table class="modern-table">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Dates</th>
+                <th>Status</th>
+                <th>Manager Remarks</th>
+              </tr>
+            </thead>
+            <tbody id="empLeaveHistoryBody">
+              <tr><td colspan="4" style="text-align:center; padding:24px;">Loading leave applications...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===================================================
+       TAB 6: NOTIFICATIONS
+       =================================================== -->
+  <section id="tab-emp-notifications" class="portal-tab-content" style="display:none;">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
+        <div>
+          <h3 style="margin:0 0 4px; font-size:18px;">Notifications & System Announcements</h3>
+          <p style="margin:0; font-size:13px; color:var(--text-soft);">Shift assignments, verification updates, and leave approvals</p>
+        </div>
+        <button class="btn-sm btn-secondary" onclick="markAllNotificationsRead()">
+          ✓ Mark All as Read
+        </button>
+      </div>
+
+      <div id="empNotificationsFullList" style="display:flex; flex-direction:column; gap:10px;">
+        <div style="padding:28px; text-align:center; color:var(--text-muted);">
+          Loading notifications...
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================
+       TAB 7: PROFILE & SECURITY
+       =================================================== -->
+  <section id="tab-emp-profile" class="portal-tab-content" style="display:none;">
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:24px;">
+
+      <!-- Employee Information Card -->
+      <div class="card">
+        <h3 style="margin:0 0 16px; font-size:18px;">Personal & Employment Details</h3>
+
+        <div class="profile-field-row">
+          <span class="profile-field-label">Employee ID</span>
+          <span class="profile-field-val" id="profEmpId">-</span>
+        </div>
+        <div class="profile-field-row">
+          <span class="profile-field-label">Full Name</span>
+          <span class="profile-field-val" id="profName">-</span>
+        </div>
+        <div class="profile-field-row">
+          <span class="profile-field-label">Email Address</span>
+          <span class="profile-field-val" id="profEmail">-</span>
+        </div>
+        <div class="profile-field-row">
+          <span class="profile-field-label">Phone Number</span>
+          <span class="profile-field-val" id="profPhone">-</span>
+        </div>
+        <div class="profile-field-row">
+          <span class="profile-field-label">Department</span>
+          <span class="profile-field-val" id="profDept">-</span>
+        </div>
+        <div class="profile-field-row">
+          <span class="profile-field-label">Job Role / Designation</span>
+          <span class="profile-field-val" id="profRole">-</span>
+        </div>
+        <div class="profile-field-row">
+          <span class="profile-field-label">Employment Type</span>
+          <span class="profile-field-val" id="profEmpType">-</span>
+        </div>
+        <div class="profile-field-row">
+          <span class="profile-field-label">Reporting Manager</span>
+          <span class="profile-field-val" id="profManager">-</span>
+        </div>
+        <div class="profile-field-row">
+          <span class="profile-field-label">Date of Joining</span>
+          <span class="profile-field-val" id="profJoined">-</span>
+        </div>
+        <div class="profile-field-row">
+          <span class="profile-field-label">Residential Address</span>
+          <span class="profile-field-val" id="profAddress">-</span>
+        </div>
+      </div>
+
+      <!-- Emergency Contact & Security Settings -->
+      <div style="display:flex; flex-direction:column; gap:24px;">
+        
+        <!-- Emergency Contact Card -->
+        <div class="card">
+          <h3 style="margin:0 0 16px; font-size:18px;">Emergency Contact</h3>
+          <div class="profile-field-row">
+            <span class="profile-field-label">Contact Name</span>
+            <span class="profile-field-val" id="profEmergName">-</span>
+          </div>
+          <div class="profile-field-row">
+            <span class="profile-field-label">Relationship</span>
+            <span class="profile-field-val" id="profEmergRelation">-</span>
+          </div>
+          <div class="profile-field-row">
+            <span class="profile-field-label">Emergency Phone</span>
+            <span class="profile-field-val" id="profEmergPhone">-</span>
+          </div>
+        </div>
+
+        <!-- Security / Password Change Card -->
+        <div class="card">
+          <h3 style="margin:0 0 8px; font-size:18px;">Security & Password</h3>
+          <p style="margin:0 0 16px; font-size:13px; color:var(--text-soft);">Change your login password to maintain account security</p>
+
+          <form id="empChangePasswordForm" onsubmit="handleChangePassword(event)">
+            <div class="input-group">
+              <label class="input-label">Current Password *</label>
+              <input type="password" id="pwCurrent" placeholder="Enter existing password" required>
+            </div>
+            <div class="input-group">
+              <label class="input-label">New Password *</label>
+              <input type="password" id="pwNew" placeholder="Minimum 6 characters" minlength="6" required>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Confirm New Password *</label>
+              <input type="password" id="pwConfirm" placeholder="Re-enter new password" minlength="6" required>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width:100%; margin-top:8px;">
+              Update Password
+            </button>
+          </form>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- Mandatory First Login Password Change Modal -->
+<div id="firstLoginModal" class="portal-modal-overlay" style="display:none;">
+  <div class="card" style="width:100%; max-width:440px; box-shadow:0 24px 60px rgba(0,0,0,0.8);">
+    <div style="text-align:center; margin-bottom:18px;">
+      <div style="display:inline-flex; padding:12px; border-radius:50%; background:rgba(245,158,11,0.15); color:#fbbf24; margin-bottom:10px;">
+        <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+        </svg>
+      </div>
+      <h3 style="margin:0 0 6px;">Update Temporary Password</h3>
+      <p style="margin:0; font-size:13px; color:var(--text-soft);">
+        Welcome to Workforce Pro! For security, you must replace your temporary password before accessing your employee portal.
+      </p>
+    </div>
+
+    <form id="firstLoginForm" onsubmit="handleFirstLoginPassword(event)">
+      <div class="input-group">
+        <label class="input-label">Current / Temporary Password *</label>
+        <input type="password" id="flCurrentPw" placeholder="Temporary password from email" required>
+      </div>
+      <div class="input-group">
+        <label class="input-label">New Password *</label>
+        <input type="password" id="flNewPw" placeholder="Minimum 6 characters" minlength="6" required>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Confirm New Password *</label>
+        <input type="password" id="flConfirmPw" placeholder="Re-type new password" minlength="6" required>
+      </div>
+
+      <button type="submit" class="btn-primary" style="width:100%; margin-top:10px;">
+        Save & Continue to Portal
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Modern Toast Notification Container -->
+<div id="toastContainer" class="toast-container"></div>
+
+<script src="js/api.js"></script>
+<script src="js/employee.js"></script>
+
+</body>
+</html>
